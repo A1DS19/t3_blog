@@ -1,6 +1,7 @@
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { createPostSchema } from "@/schemas/createPostSchema";
 import { PrismaClient } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import slugify from "slugify";
 import { z } from "zod";
 
@@ -25,43 +26,76 @@ export const postRouter = createTRPCRouter({
         data: {
           title: input.title,
           description: input.description,
-          text: input.text,
+          html: input.html,
           slug,
-          authorId: session.user.id,
+          authorId: session.user.id, // same as connect
+          tags: {
+            connect: input.tagIds,
+          },
         },
       });
 
       return post;
     }),
-  getPosts: publicProcedure.query(async ({ ctx: { prisma, session } }) => {
-    return await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        slug: true,
-        createdAt: true,
-        author: {
-          select: {
-            name: true,
-            image: true,
-            username: true,
+  getPosts: publicProcedure
+    .input(
+      z.object({
+        cursor: z.string().nullish(),
+      })
+    )
+    .query(async ({ ctx: { prisma, session }, input: { cursor } }) => {
+      const posts = await prisma.post.findMany({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          slug: true,
+          createdAt: true,
+          featuredImage: true,
+          author: {
+            select: {
+              name: true,
+              image: true,
+              username: true,
+            },
+          },
+          bookmarks: session?.user?.id
+            ? {
+                where: {
+                  authorId: session?.user?.id,
+                },
+                select: {
+                  authorId: true,
+                },
+              }
+            : undefined,
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+            take: 10 + 1,
+            cursor: cursor
+              ? {
+                  id: cursor,
+                }
+              : undefined,
           },
         },
-        bookmarks: session?.user?.id
-          ? {
-              where: {
-                authorId: session?.user?.id,
-              },
-              select: {
-                authorId: true,
-              },
-            }
-          : undefined,
-      },
-    });
-  }),
+      });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (posts.length > 10) {
+        const nextItem = posts.pop();
+        if (nextItem) {
+          nextCursor = nextItem.id;
+        }
+      }
+
+      return { posts, nextCursor };
+    }),
   getPost: publicProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx: { prisma, session }, input }) => {
@@ -72,6 +106,7 @@ export const postRouter = createTRPCRouter({
             select: {
               name: true,
               image: true,
+              id: true,
             },
           },
           likes: session?.user?.id
@@ -220,4 +255,31 @@ export const postRouter = createTRPCRouter({
       });
     }
   ),
+  updateFeaturedImage: protectedProcedure
+    .input(z.object({ postId: z.string(), featuredImage: z.string() }))
+    .mutation(async ({ ctx: { prisma, session }, input }) => {
+      const post = await prisma.post.findUnique({
+        where: {
+          id: input.postId,
+        },
+      });
+
+      if (post?.authorId !== session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not allowed to update this post",
+        });
+      }
+
+      await prisma.post.update({
+        where: {
+          id: input.postId,
+        },
+        data: {
+          featuredImage: input.featuredImage,
+        },
+      });
+
+      return true;
+    }),
 });

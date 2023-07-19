@@ -26,6 +26,7 @@ const config = {
       "lh3.googleusercontent.com",
       "cloudflare-ipfs.com",
       "gmbhjefakyczrgonelyd.supabase.co",
+      "images.unsplash.com",
     ],
   },
 };

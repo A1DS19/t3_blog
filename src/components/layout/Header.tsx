@@ -11,7 +11,7 @@ export const Header = () => {
   const { setModalProps, setIsOpen } = React.useContext(ModalContext);
 
   const handleWritePost = (): void => {
-    setIsOpen(true);
+    setIsOpen("createPost");
     setModalProps({
       title: "Write a post",
       description: "Write a post and share it with the world",

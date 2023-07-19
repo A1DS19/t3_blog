@@ -1,17 +1,24 @@
-import type { IModalProps } from "@/types/Modal";
 import React, { createContext } from "react";
 
-type ModalProps = Pick<IModalProps, "title" | "description">;
+type ModalProps = { title: string; description: string };
+type Modals =
+  | "createPost"
+  | "createTag"
+  | "addBackgroundImageToPost"
+  | "messagesSideBarPost"
+  | "viewFollowers"
+  | "viewFollowing"
+  | null;
 
 export type ModalContextType = {
-  isOpen: boolean;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isOpen: Modals;
+  setIsOpen: React.Dispatch<React.SetStateAction<Modals>>;
   modalProps: ModalProps;
   setModalProps: React.Dispatch<React.SetStateAction<ModalProps>>;
 };
 
 export const ModalContext = createContext<ModalContextType>({
-  isOpen: false,
+  isOpen: null,
   setIsOpen: () => null,
   modalProps: {
     title: "",
@@ -25,7 +32,12 @@ export const ModalProvider = ({ children }: React.PropsWithChildren) => {
     title: "",
     description: "",
   });
-  const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  const [isOpen, setIsOpen] = React.useState<Modals>(null);
+  // const prevOpenModal = React.useRef<Modals>(null);
+
+  // React.useEffect(() => {
+  //   prevOpenModal.current = isOpen;
+  // }, [setIsOpen]);
 
   const values: ModalContextType = {
     isOpen,

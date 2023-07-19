@@ -2,7 +2,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { api } from "@/utils/api";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React from "react";
+import React, { useContext } from "react";
 import { BiEdit } from "react-icons/bi";
 import { SlShareAlt } from "react-icons/sl";
 import toast from "react-hot-toast";
@@ -84,6 +84,24 @@ export default function UserProfilePage() {
     };
   };
 
+  const followUser = api.user.followUser.useMutation({
+    onSuccess: async () => {
+      await userRoute.getSuggestions.invalidate();
+      await userRoute.getUser.invalidate();
+      toast.success("Followed");
+    },
+  });
+  const unfollowUser = api.user.unfollowUser.useMutation({
+    onSuccess: async () => {
+      await userRoute.getSuggestions.invalidate();
+      await userRoute.getUser.invalidate();
+      toast.success("Un Followed");
+    },
+  });
+  const isFollowedByUser = !!handleGetUserProfile.data?.followedBy.find(
+    (user) => user.id === currentUser.data?.user?.id
+  );
+
   return (
     <MainLayout>
       <div className="flex h-full w-full items-center justify-center">
@@ -146,19 +164,52 @@ export default function UserProfilePage() {
               <div className="text-sm text-gray-600">
                 {handleGetUserProfile.data?._count.posts || 0} Posts
               </div>
-              <div className="mt-1">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("Copied to clipboard");
-                  }}
-                  className="mt-2 flex transform items-center space-x-2 rounded border border-gray-200 px-3  py-1.5 duration-500 hover:border-gray-900 hover:text-gray-900 active:scale-95"
-                >
-                  <div>Share</div>
+              <div className="flex space-x-2 text-sm text-gray-600">
+                <div>
+                  {handleGetUserProfile.data?._count.following || 0} Following
+                </div>
+                <div>
+                  {handleGetUserProfile.data?._count.followedBy || 0} Followers
+                </div>
+              </div>
+              <div className="mt-1 flex space-x-2">
+                <div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success("Copied to clipboard");
+                    }}
+                    className="mt-2 flex transform items-center space-x-2 rounded border border-gray-200 px-3  py-1.5 duration-500 hover:border-gray-900 hover:text-gray-900 active:scale-95"
+                  >
+                    <div>Share</div>
+                    <div>
+                      <SlShareAlt className="text-lg" />
+                    </div>
+                  </button>
+                </div>
+                {handleGetUserProfile.isSuccess &&
+                currentUser.status === "authenticated" &&
+                handleGetUserProfile.data &&
+                handleGetUserProfile.data.id !== currentUser.data?.user.id ? (
                   <div>
-                    <SlShareAlt className="text-lg" />
+                    <button
+                      onClick={
+                        isFollowedByUser
+                          ? () =>
+                              unfollowUser.mutate({
+                                userId: handleGetUserProfile.data?.id as string,
+                              })
+                          : () =>
+                              followUser.mutate({
+                                userId: handleGetUserProfile.data?.id as string,
+                              })
+                      }
+                      className="mt-2 flex transform items-center space-x-2 rounded border border-gray-200 px-3  py-1.5 duration-500 hover:border-gray-900 hover:text-gray-900 active:scale-95"
+                    >
+                      {isFollowedByUser ? "Un Follow" : "Follow"}
+                    </button>
                   </div>
-                </button>
+                ) : null}
               </div>
             </div>
           </div>

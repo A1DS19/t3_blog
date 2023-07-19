@@ -25,6 +25,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string(),
     SUPABASE_PUBLIC_URL: z.string().min(1),
     SUPABASE_KEY: z.string().min(1),
+    UNSPLASH_API_ACCESS_KEY: z.string().min(1),
+    UNSPLASH_API_ACCESS_SECRET: z.string().min(1),
   },
 
   /**
@@ -49,6 +51,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     SUPABASE_PUBLIC_URL: process.env.SUPABASE_PUBLIC_URL,
     SUPABASE_KEY: process.env.SUPABASE_KEY,
+    UNSPLASH_API_ACCESS_KEY: process.env.UNSPLASH_API_ACCESS_KEY,
+    UNSPLASH_API_ACCESS_SECRET: process.env.UNSPLASH_API_ACCESS_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.

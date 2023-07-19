@@ -13,9 +13,16 @@ export const userRouter = createTRPCRouter({
           username: true,
           name: true,
           image: true,
+          followedBy: {
+            select: {
+              id: true,
+            },
+          },
           _count: {
             select: {
               posts: true,
+              followedBy: true,
+              following: true,
             },
           },
         },
@@ -84,4 +91,155 @@ export const userRouter = createTRPCRouter({
         },
       });
     }),
+  getSuggestions: protectedProcedure.query(
+    async ({ ctx: { prisma, session } }) => {
+      const query = {
+        where: {
+          authorId: session.user.id,
+        },
+        select: {
+          post: {
+            select: {
+              tags: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        take: 10,
+      };
+
+      const likes = await prisma.like.findMany(query);
+      const bookmarks = await prisma.bookmark.findMany(query);
+
+      const interestedTags: string[] = [
+        ...likes.flatMap((like) => like.post.tags.map((tag) => tag.name)),
+        ...bookmarks.flatMap((bookmark) =>
+          bookmark.post.tags.map((tag) => tag.name)
+        ),
+      ];
+
+      const suggestions = await prisma.user.findMany({
+        where: {
+          OR: [
+            {
+              likes: {
+                some: {
+                  post: {
+                    tags: {
+                      some: {
+                        name: {
+                          in: interestedTags,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            {
+              bookmarks: {
+                some: {
+                  post: {
+                    tags: {
+                      some: {
+                        name: {
+                          in: interestedTags,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          NOT: {
+            id: session.user.id,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          username: true,
+          followedBy: {
+            select: {
+              id: true,
+            },
+          },
+        },
+        take: 4,
+      });
+
+      return suggestions;
+    }
+  ),
+  followUser: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx: { prisma, session }, input }) => {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          following: {
+            connect: {
+              id: input.userId,
+            },
+          },
+        },
+      });
+    }),
+  unfollowUser: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx: { prisma, session }, input }) => {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          following: {
+            disconnect: {
+              id: input.userId,
+            },
+          },
+        },
+      });
+    }),
+  getAllFollowers: protectedProcedure.query(
+    async ({ ctx: { prisma, session } }) => {
+      return await prisma.user.findMany({
+        where: {
+          id: session.user.id,
+        },
+        select: {
+          followedBy: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      });
+    }
+  ),
+  getAllFollowing: protectedProcedure.query(
+    async ({ ctx: { prisma, session } }) => {
+      return await prisma.user.findMany({
+        where: {
+          id: session.user.id,
+        },
+        select: {
+          following: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      });
+    }
+  ),
 });

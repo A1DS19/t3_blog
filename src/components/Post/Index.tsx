@@ -88,16 +88,28 @@ export const Post: React.FC<IPost> = ({ post }) => {
           <div
             onClick={async () => handleGoToPost(post.slug)}
             className="h-full w-full transform cursor-pointer rounded-xl bg-gray-300 transition duration-300 hover:scale-105 hover:shadow-xl"
-          ></div>
+          >
+            {post && post.featuredImage ? (
+              <Image
+                src={post?.featuredImage}
+                alt={post.title}
+                fill
+                className="rounded-xl"
+              />
+            ) : null}
+          </div>
         </div>
       </div>
       <div>
         <div className="flex w-full items-center justify-between space-x-4">
-          <div>My topics:</div>
           <div className="flex items-center space-x-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-gray-200/50 px-5 py-2">
-                {i} tag
+            {post?.tags?.map((tag) => (
+              <div
+                key={tag.id}
+                onClick={() => router.push(`/tag/${tag.slug}`)}
+                className="cursor-pointer rounded-2xl bg-gray-200/50 px-5 py-2"
+              >
+                {tag.name}
               </div>
             ))}
           </div>

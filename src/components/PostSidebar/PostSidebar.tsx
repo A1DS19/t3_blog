@@ -53,8 +53,11 @@ export const PostSidebar: React.FC<PostSidebarProps> = ({ postId }) => {
 
   return (
     <>
-      <Transition.Root show={isOpen} as={React.Fragment}>
-        <Dialog onClose={() => setIsOpen(false)} as="div">
+      <Transition.Root
+        show={isOpen === "messagesSideBarPost"}
+        as={React.Fragment}
+      >
+        <Dialog onClose={() => setIsOpen(null)} as="div">
           <div className="fixed right-0 top-0">
             <Transition.Child
               enter="transition duration-1000"
@@ -73,7 +76,7 @@ export const PostSidebar: React.FC<PostSidebarProps> = ({ postId }) => {
                     <div>
                       <HiXMark
                         className="cursor-pointer"
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => setIsOpen(null)}
                       />
                     </div>
                   </div>
